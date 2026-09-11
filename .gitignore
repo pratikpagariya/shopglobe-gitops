@@ -1,0 +1,14 @@
+# Helm
+charts/**/charts/
+*.tgz
+Chart.lock
+
+# Rendered output is a build artifact, not source
+rendered/
+
+# Local
+.env
+*.pem
+*.key
+kubeconfig*
+.DS_Store
