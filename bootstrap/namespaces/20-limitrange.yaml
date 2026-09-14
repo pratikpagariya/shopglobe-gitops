@@ -1,0 +1,42 @@
+# Three jobs:
+#   default / defaultRequest -- fill in what a pod omits
+#   max                      -- stop one pod eating the whole quota
+#   min                      -- stop absurdly small requests that break scheduling
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: shopglobe-prod
+spec:
+  limits:
+    - type: Container
+      default:            { cpu: 200m, memory: 256Mi }   # becomes the LIMIT
+      defaultRequest:     { cpu: 50m,  memory: 128Mi }   # becomes the REQUEST
+      max:                { cpu: "1",  memory: 1Gi }
+      min:                { cpu: 10m,  memory: 32Mi }
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: shopglobe-stage
+spec:
+  limits:
+    - type: Container
+      default:        { cpu: 200m, memory: 256Mi }
+      defaultRequest: { cpu: 50m,  memory: 128Mi }
+      max:            { cpu: 500m, memory: 512Mi }
+      min:            { cpu: 10m,  memory: 32Mi }
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: shopglobe-dev
+spec:
+  limits:
+    - type: Container
+      default:        { cpu: 200m, memory: 256Mi }
+      defaultRequest: { cpu: 50m,  memory: 128Mi }
+      max:            { cpu: 500m, memory: 512Mi }
+      min:            { cpu: 10m,  memory: 32Mi }

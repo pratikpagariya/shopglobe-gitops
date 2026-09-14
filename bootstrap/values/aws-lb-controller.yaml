@@ -1,0 +1,33 @@
+clusterName: shopglobe-prod-eks
+region: ap-south-1
+vpcId: vpc-0e0be681f1e95fea1          # paste from above
+
+serviceAccount:
+  create: true
+  # Must match the Pod Identity association exactly.
+  name: aws-load-balancer-controller
+  # NO eks.amazonaws.com/role-arn annotation. That is IRSA. With Pod Identity
+  # the association lives in AWS, not on the ServiceAccount -- which is one of
+  # the reasons it is simpler to reason about.
+  annotations: {}
+
+tolerations:
+  - key: workload
+    operator: Equal
+    value: platform
+    effect: NoSchedule
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: workload
+              operator: In
+              values: [platform]
+
+replicaCount: 1   # 2 in real prod; you have one platform node
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits:   { cpu: 200m, memory: 256Mi }

@@ -1,0 +1,49 @@
+# A ResourceQuota caps a namespace's TOTAL requests. Without it, one runaway
+# deployment in dev consumes the whole cluster and prod pods go Pending.
+# That is the noisy-neighbour risk you accept with namespace-per-env, and
+# this is how you mitigate it.
+#
+# Note: quotas are a CEILING, not a reservation. The sum across namespaces
+# deliberately exceeds cluster capacity -- you are betting all three will not
+# peak together. That bet is normal, and Cluster Autoscaler is the backstop.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute
+  namespace: shopglobe-prod
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 3Gi
+    limits.cpu: "4"
+    limits.memory: 5Gi
+    pods: "30"
+    persistentvolumeclaims: "4"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute
+  namespace: shopglobe-stage
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1500Mi
+    limits.cpu: "2"
+    limits.memory: 2500Mi
+    pods: "20"
+    persistentvolumeclaims: "2"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute
+  namespace: shopglobe-dev
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1500Mi
+    limits.cpu: "2"
+    limits.memory: 2500Mi
+    pods: "20"
+    persistentvolumeclaims: "2"

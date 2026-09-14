@@ -1,0 +1,36 @@
+# Three APPLICATION environments on ONE cluster. The infra envs are three
+# Terraform stacks, only one of which is ever applied. Keep the two ideas
+# separate when explaining this.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopglobe-dev
+  labels:
+    env: dev
+    # Pod Security Admission. "restricted" is the strictest profile: no root,
+    # no privilege escalation, seccomp required, all capabilities dropped.
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopglobe-stage
+  labels:
+    env: stage
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopglobe-prod
+  labels:
+    env: prod
+    # Prod enforces restricted. dev only warns -- so developers see the failure
+    # in dev before it becomes a rejection in prod.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

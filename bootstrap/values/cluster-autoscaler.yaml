@@ -1,0 +1,51 @@
+autoDiscovery:
+  clusterName: shopglobe-prod-eks
+awsRegion: ap-south-1
+
+image:
+  tag: v1.35.0        # MUST track the cluster minor version
+
+rbac:
+  serviceAccount:
+    create: true
+    # Must match the Pod Identity association exactly: kube-system/cluster-autoscaler.
+    # No IRSA annotation here -- Pod Identity needs no ServiceAccount annotation,
+    # which is one of the things that makes it simpler.
+    name: cluster-autoscaler
+
+extraArgs:
+  # Scale-down is the hard half. Too eager and you thrash; too lazy and you
+  # pay for idle nodes. These are deliberately conservative.
+  scale-down-unneeded-time: 5m
+  scale-down-delay-after-add: 5m
+  scale-down-utilization-threshold: 0.5
+  # least-waste picks the node group that leaves the least idle capacity
+  expander: least-waste
+  balance-similar-node-groups: true
+  skip-nodes-with-local-storage: false
+  skip-nodes-with-system-pods: false
+
+# Platform node group is tainted, so the toleration is required. Affinity is
+# what actually pulls it there -- a toleration alone only permits, it does not
+# attract.
+tolerations:
+  - key: workload
+    operator: Equal
+    value: platform
+    effect: NoSchedule
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: workload
+              operator: In
+              values: [platform]
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits:   { cpu: 200m, memory: 512Mi }
+
+podDisruptionBudget:
+  maxUnavailable: 1

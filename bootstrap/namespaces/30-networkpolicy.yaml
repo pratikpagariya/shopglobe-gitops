@@ -1,0 +1,46 @@
+# DEFAULT-DENY INGRESS. The moment a policy selects a pod, that pod is
+# default-deny for the directions the policy names. An empty podSelector
+# selects every pod in the namespace.
+#
+# Deliberately INGRESS only. Default-deny egress also blocks DNS, RDS, the
+# AWS APIs and the metadata service -- every one a separate allow rule, and
+# every mistake looks like a timeout. Do egress on day 5 with netshoot in hand.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: shopglobe-prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+# Now allow back what is legitimate: traffic from inside this namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: shopglobe-prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
+---
+# And scraping, from wherever Prometheus ends up living.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: shopglobe-prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8000
+          protocol: TCP
