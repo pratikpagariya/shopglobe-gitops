@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service
+description: One chart for all shopglobe services. Differences live in values files.
+type: application
+version: 0.1.0
+appVersion: "1.0"

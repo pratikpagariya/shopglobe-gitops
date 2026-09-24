@@ -1,0 +1,41 @@
+# Defaults. Per-service and per-env files override these.
+nameOverride: ""
+replicaCount: 1
+
+image:
+  registry: 355653384401.dkr.ecr.ap-south-1.amazonaws.com
+  repository: ""        # set per service, e.g. shopglobe-prod-catalog-svc
+  tag: ""               # WRITTEN BY JENKINS. Never edited by hand.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: ""              # defaults to the release name
+
+service:
+  port: 8000
+
+env: {}                 # plain key/value config
+envFromSecret: ""       # name of a k8s Secret to load wholesale
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits:   { cpu: 500m, memory: 256Mi }
+
+# The prod namespace enforces the `restricted` Pod Security Standard. These
+# are not optional there -- a pod without them is REJECTED at admission.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: RuntimeDefault
+
+# Must exceed DRAIN_SECONDS (5) plus your longest request.
+terminationGracePeriodSeconds: 30
+
+nodeSelector:
+  workload: apps

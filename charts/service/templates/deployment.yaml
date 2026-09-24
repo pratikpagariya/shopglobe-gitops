@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "service.name" . }}
+  labels: {{- include "service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "service.name" . }}
+  template:
+    metadata:
+      labels: {{- include "service.labels" . | nindent 8 }}
+      annotations:
+        # Hash the config into the pod template so a config change actually
+        # triggers a rollout. Without this you change a ConfigMap and nothing
+        # restarts -- exactly the trap we hit with JCasC.
+        checksum/config: {{ toYaml .Values.env | sha256sum }}
+    spec:
+      serviceAccountName: {{ default (include "service.name" .) .Values.serviceAccount.name }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: app
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            - name: SERVICE_NAME
+              value: {{ include "service.name" . }}
+            - name: ENV
+              value: {{ .Release.Namespace | trimPrefix "shopglobe-" }}
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          {{- if .Values.envFromSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          {{- end }}
+          # LIVENESS tests the process only. Point it at a dependency and one
+          # DB blip restarts every pod at once.
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          # READINESS is where dependencies belong. 503 removes this pod from
+          # the Service without killing it.
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # EndpointSlice removal is eventually consistent -- traffic can
+              # still arrive for a second or two after SIGTERM.
+              exec: { command: ["sh", "-c", "sleep 5"] }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            # readOnlyRootFilesystem means /tmp must be provided explicitly.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
