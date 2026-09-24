@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: catalog-svc-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
+    targetRevision: main
+    path: charts/service
+    helm:
+      releaseName: catalog-svc
+      # Chart defaults, then the per-env file Jenkins writes into.
+      valueFiles:
+        - ../../values/dev/catalog-svc.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shopglobe-dev
+  syncPolicy:
+    automated:
+      prune: true      # delete what git no longer declares
+      selfHeal: true   # revert manual kubectl edits
+    syncOptions:
+      - CreateNamespace=false   # the namespace layer owns namespaces

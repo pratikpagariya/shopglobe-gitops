@@ -1,0 +1,88 @@
+controller:
+  image:
+    registry: "355653384401.dkr.ecr.ap-south-1.amazonaws.com"
+    repository: "shopglobe-prod-jenkins"
+    # Overridden at install time with --set controller.image.tag=$TAG.
+    # Once the CI pipeline exists, Jenkins commits this value into the gitops
+    # repo itself and ArgoCD applies it -- no --set, no manual edit.
+    tag: "20260923-1448"
+
+  # Our image already contains every plugin. Without this the chart installs
+  # its own list at startup and you lose the whole point of pre-baking.
+  installPlugins: false
+  overwritePlugins: false
+
+  # The chart's defaultConfig normally carries this. We turned that off, so it
+  # has to be set here -- otherwise Jenkins boots into the setup wizard and
+  # whatever JCasC configures afterwards is beside the point.
+  javaOpts: "-Djenkins.install.runSetupWizard=false"
+
+  # JCasC resolves ${VAR} from environment variables OR from files in $SECRETS.
+  #
+  # Files are the better practice -- env leaks into crash dumps,
+  # /proc/<pid>/environ and child processes. But this chart OWNS $SECRETS: it
+  # sets it to /run/secrets/additional and mounts its own chart-admin-* files
+  # there. Duplicate env names resolve to the last one, so our value was
+  # silently overridden. Mounting alongside would couple us to a chart internal
+  # that can change on upgrade -- silent breakage on a chart bump.
+  #
+  # So: env vars, deliberately, with the tradeoff understood.
+  containerEnv:
+    - name: JENKINS_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-secrets
+          key: JENKINS_ADMIN_PASSWORD
+    - name: GITHUB_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-secrets
+          key: GITHUB_USER
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-secrets
+          key: GITHUB_TOKEN
+
+  JCasC:
+    defaultConfig: false # ours is the only config
+    configScripts:
+      shopglobe: |
+        # replaced at install time by --set-file from jenkins.yaml
+
+  sidecars:
+    configAutoReload:
+      enabled: true # a ConfigMap change now reloads JCasC without a restart
+
+  resources:
+    requests: { cpu: "500m", memory: "1Gi" }
+    limits: { cpu: "2", memory: "3Gi" }
+
+  # The platform node group is tainted. A toleration only PERMITS scheduling
+  # there; nodeSelector is what ATTRACTS it. You need both.
+  tolerations:
+    - key: workload
+      operator: Equal
+      value: platform
+      effect: NoSchedule
+  nodeSelector:
+    workload: platform
+
+  serviceType: ClusterIP
+
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 20Gi
+
+serviceAccount:
+  create: true
+  name: jenkins # must match the Pod Identity association exactly
+
+rbac:
+  create: true
+
+agent:
+  enabled: true
+  podName: jenkins-agent
+  customJenkinsLabels: []

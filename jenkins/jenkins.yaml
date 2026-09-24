@@ -1,0 +1,120 @@
+# This file IS the controller's configuration. Everything here would otherwise
+# be clicked through Manage Jenkins -- and would then exist only in the PVC,
+# unversioned and unreviewable.
+jenkins:
+  systemMessage: "shopglobe — configured by JCasC. UI changes are not persisted."
+
+  # Never build on the controller. A build that can write to JENKINS_HOME can
+  # rewrite your jobs and read your credentials.
+  numExecutors: 0
+  mode: EXCLUSIVE
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          # Resolved from /run/secrets/jenkins/JENKINS_ADMIN_PASSWORD, which
+          # External Secrets populated from AWS Secrets Manager.
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "admin"
+            permissions:
+              - "Overall/Administer"
+        - group:
+            name: "authenticated"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+              - "Job/Build"
+
+  clouds:
+    - kubernetes:
+        name: "eks"
+        namespace: "jenkins"
+        # In-cluster service DNS. The agent connects back over JNLP on 50000.
+        jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
+        jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+        containerCapStr: "10"
+        podLabels:
+          - key: "jenkins"
+            value: "agent"
+        templates:
+          # Builds run here. Kaniko builds images with NO daemon and NO
+          # privileges -- the old way, mounting /var/run/docker.sock, hands the
+          # agent root on the node, so any job could then own the cluster.
+          - name: "kaniko"
+            label: "kaniko"
+            serviceAccount: "jenkins"      # carries the Pod Identity association
+            yamlMergeStrategy: "override"
+            containers:
+              - name: "kaniko"
+                image: "gcr.io/kaniko-project/executor:v1.23.2-debug"
+                command: "/busybox/cat"
+                ttyEnabled: true
+                resourceRequestCpu: "200m"
+                resourceRequestMemory: "1Gi"
+                resourceLimitMemory: "2Gi"
+              - name: "tools"
+                image: "python:3.12-slim"
+                command: "cat"
+                ttyEnabled: true
+                resourceRequestCpu: "200m"
+                resourceRequestMemory: "512Mi"
+              - name: "trivy"
+                image: "aquasec/trivy:0.58.1"
+                command: "cat"
+                ttyEnabled: true
+                resourceRequestCpu: "200m"
+                resourceRequestMemory: "512Mi"
+
+          # A plain agent for jobs that are not builds -- the seed job runs
+          # here. The kubernetes plugin auto-injects the jnlp container (which
+          # has git), so no containers block is needed.
+          - name: "default"
+            label: "default"
+            serviceAccount: "jenkins"
+            yamlMergeStrategy: "override"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github"
+              username: "${GITHUB_USER}"
+              password: "${GITHUB_TOKEN}"
+              description: "GitHub PAT — injected from Secrets Manager, never typed in the UI"
+
+unclassified:
+  location:
+    url: "http://jenkins.jenkins.svc.cluster.local:8080/"
+
+# THE SEED JOB. One job, declared here, whose only purpose is to read Job DSL
+# scripts from git and generate every other job. This is the bootstrap that
+# makes jobs-as-code self-installing.
+jobs:
+  - script: >
+      job('seed') {
+        description('Reads Job DSL from shopglobe-apps and generates all pipelines. Do not edit in the UI.')
+        label('default')
+        scm {
+          git {
+            remote { url('https://github.com/${GITHUB_USER}/shopglobe-apps.git') }
+            branch('main')
+          }
+        }
+        triggers { scm('H/5 * * * *') }
+        steps {
+          dsl {
+            external('jenkins/jobdsl/*.groovy')
+            removeAction('DELETE')
+            lookupStrategy('SEED_JOB')
+          }
+        }
+      }

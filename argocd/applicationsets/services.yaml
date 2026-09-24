@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: shopglobe-services
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # Discovers every values/<env>/<service>/values.yaml in the repo and
+    # creates one Application per file. No hardcoded list of 24 apps -- adding
+    # a service means adding a values file, and REMOVING one deletes its
+    # Application. The set converges on the repo, in both directions.
+    - git:
+        repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
+        revision: main
+        files:
+          - path: "values/*/*/values.yaml"
+  template:
+    metadata:
+      name: '{{ index .path.segments 2 }}-{{ index .path.segments 1 }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
+        targetRevision: main
+        path: charts/service
+        helm:
+          releaseName: '{{ index .path.segments 2 }}'
+          valueFiles:
+            - '../../{{ .path.path }}/values.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'shopglobe-{{ index .path.segments 1 }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false

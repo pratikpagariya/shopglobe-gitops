@@ -1,0 +1,46 @@
+global:
+  # Everything on the tainted platform node group, same as Jenkins.
+  tolerations:
+    - key: workload
+      operator: Equal
+      value: platform
+      effect: NoSchedule
+  nodeSelector:
+    workload: platform
+
+configs:
+  params:
+    # No TLS on the API server itself -- we port-forward, and later an ALB
+    # would terminate TLS in front of it.
+    server.insecure: true
+  cm:
+    # Stop ArgoCD fighting Jenkins over the image tag it just committed, and
+    # keep noisy diffs out of the UI.
+    resource.exclusions: |
+      - apiGroups: ["cilium.io"]
+        kinds: ["CiliumIdentity"]
+        clusters: ["*"]
+
+controller:
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { cpu: 1, memory: 1Gi }
+
+repoServer:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+server:
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+
+dex:
+  enabled: false        # local admin only for now
+
+applicationSet:
+  enabled: true         # this is what generates 8 services x 3 envs
+
+redis:
+  enabled: true

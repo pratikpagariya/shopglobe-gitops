@@ -1,0 +1,31 @@
+# --- the three that make this project work ---
+configuration-as-code          # JCasC: the controller configures itself from YAML
+job-dsl                        # jobs as Groovy code
+kubernetes                     # each build gets a fresh pod as its agent
+
+# --- pipeline ---
+workflow-aggregator
+pipeline-stage-view
+pipeline-utility-steps
+timestamper
+ws-cleanup
+
+# --- source control ---
+git
+github
+github-branch-source
+
+# --- credentials (all injected from Secrets Manager, none typed in the UI) ---
+credentials
+credentials-binding
+plain-credentials
+ssh-credentials
+
+# --- authorization ---
+matrix-auth
+
+# --- quality gates ---
+sonar
+
+# --- day 5: exposes /prometheus for scraping ---
+prometheus
