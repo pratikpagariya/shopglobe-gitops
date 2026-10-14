@@ -6,5 +6,5 @@ env:
   LOG_LEVEL: INFO
   MARKET: in
   # rediss:// = TLS (transit encryption is on). /0 = dev, /1 = stage, /2 = prod.
-  # Fill once after the first apply: terraform output -raw redis_endpoint
-  REDIS_URL: "rediss://SET-AFTER-APPLY:6379/1"
+  # From `terraform output -raw redis_endpoint` (stable per account+region).
+  REDIS_URL: "rediss://master.shopglobe-prod-redis.qapl0r.aps1.cache.amazonaws.com:6379/1"
