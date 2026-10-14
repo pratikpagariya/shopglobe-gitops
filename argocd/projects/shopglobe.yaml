@@ -26,12 +26,13 @@ spec:
     - {group: "", kind: ServiceAccount}
     - {group: batch, kind: Job}  # step 7: the PreSync migration job
 
-  # No Friday deploys, no 3am deploys. Outside this window prod cannot sync --
-  # not automatically, and not by hand either. The break-glass is a reviewed
-  # PR that edits this window, which leaves a record.
+  # No Friday deploys, no overnight deploys. Outside this window prod cannot
+  # sync -- not automatically, and not by hand either. The break-glass is a
+  # reviewed PR that edits this window, which leaves a record. (Widened from
+  # 18:00 to 23:59 so evening lab sessions can still promote to prod.)
   syncWindows:
     - kind: allow
       schedule: "0 10 * * 1-4"  # Mon-Thu, 10:00
-      duration: 8h              # until 18:00
+      duration: 13h59m          # until 23:59
       timeZone: Asia/Kolkata
       applications: ["*-prod"]
