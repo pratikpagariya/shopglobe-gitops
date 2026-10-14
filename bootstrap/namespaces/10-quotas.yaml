@@ -30,7 +30,7 @@ spec:
     requests.cpu: "1"
     requests.memory: 1500Mi
     limits.cpu: "2"
-    limits.memory: 2500Mi
+    limits.memory: 3Gi
     pods: "20"
     persistentvolumeclaims: "2"
 ---
@@ -44,6 +44,6 @@ spec:
     requests.cpu: "1"
     requests.memory: 1500Mi
     limits.cpu: "2"
-    limits.memory: 2500Mi
+    limits.memory: 3Gi
     pods: "20"
     persistentvolumeclaims: "2"

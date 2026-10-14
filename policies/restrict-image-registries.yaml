@@ -1,0 +1,44 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-image-registries
+  annotations:
+    policies.kyverno.io/description: >-
+      Images must come from this account's ECR. Those are the only images
+      Jenkins built, Trivy scanned and ECR scans again on push.
+# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# across all five policies -- disallow-latest-tag.yaml explains each field.
+spec:
+  validationActions: [Audit]
+  failurePolicy: Fail
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, jobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [shopglobe-dev, shopglobe-stage, shopglobe-prod]
+  variables:
+    - name: allContainers
+      expression: >-
+        object.spec.containers + object.spec.?initContainers.orValue([]) +
+        object.spec.?ephemeralContainers.orValue([])
+  validations:
+    # The trailing "shopglobe-prod-" matters: without it, any repo in this
+    # account would pass -- including one nobody scans.
+    - expression: >-
+        variables.allContainers.all(c,
+        c.image.startsWith('355653384401.dkr.ecr.ap-south-1.amazonaws.com/shopglobe-prod-'))
+      message: >-
+        Images must come from this account's ECR (shopglobe-prod-* repos):
+        built by Jenkins, scanned by Trivy.

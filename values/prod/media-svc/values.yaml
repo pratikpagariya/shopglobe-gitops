@@ -1,0 +1,9 @@
+image:
+  repository: shopglobe-prod-media-svc
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+  S3_BUCKET: shopglobe-prod-media-355653384401
+  # CDN_DOMAIN unset: presigned S3 URLs only. CloudFront is in the dropped list.

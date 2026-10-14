@@ -1,0 +1,48 @@
+{{- if .Values.migrations.enabled }}
+{{- if not .Values.migrations.args }}{{ fail "migrations.args is required when migrations.enabled" }}{{ end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "service.name" . }}-migrate
+  labels: {{- include "service.labels" . | nindent 4 }}
+  annotations:
+    # PreSync: must SUCCEED before ArgoCD applies anything else, so no pod of
+    # the new version ever starts against the old schema. One Job -- not N
+    # replicas racing to migrate at startup.
+    argocd.argoproj.io/hook: PreSync
+    # Delete the previous run just before creating the next: the last run's
+    # logs stay readable (`kubectl logs job/...-migrate`) until the next sync.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels: {{- include "service.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      # NOT the release's ServiceAccount: PreSync runs before the rest of the
+      # release is applied, so on the first sync that SA does not exist yet
+      # and this pod could never be created. It needs no API access anyway.
+      automountServiceAccountToken: false
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.registry }}/{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required -- Jenkins writes it" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: {{- toYaml .Values.migrations.args | nindent 12 }}
+          env:
+            - name: SERVICE_NAME
+              value: {{ include "service.name" . }}-migrate
+          envFrom:
+            - secretRef:
+                name: {{ required "migrations need envFromSecret (it carries DATABASE_URL)" .Values.envFromSecret }}
+          resources: {{- toYaml .Values.hookResources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

@@ -1,0 +1,10 @@
+image:
+  repository: shopglobe-prod-cart-svc
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+  # rediss:// = TLS (transit encryption is on). /0 = dev, /1 = stage, /2 = prod.
+  # Fill once after the first apply: terraform output -raw redis_endpoint
+  REDIS_URL: "rediss://SET-AFTER-APPLY:6379/2"

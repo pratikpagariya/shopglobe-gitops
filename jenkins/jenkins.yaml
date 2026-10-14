@@ -71,6 +71,38 @@ jenkins:
                 ttyEnabled: true
                 resourceRequestCpu: "200m"
                 resourceRequestMemory: "512Mi"
+              # Pinned yq for the gitops edit. Replaces downloading
+              # releases/latest at build time: an unpinned download is a
+              # supply-chain hole, and a failed one used to fall through to
+              # overwriting the whole values file.
+              - name: "yq"
+                image: "mikefarah/yq:4.45.1"
+                command: "cat"
+                ttyEnabled: true
+                resourceRequestCpu: "50m"
+                resourceRequestMemory: "64Mi"
+
+          # Infra lint. NO serviceAccount line: the pod runs as the namespace's
+          # `default` SA, which has no Pod Identity association, so it holds no
+          # AWS credentials of its own. (Unless the nodes set the metadata hop
+          # limit to 1, a pod can still borrow the NODE role through IMDS --
+          # a hardening item for the node group.)
+          - name: "terraform"
+            label: "terraform"
+            yamlMergeStrategy: "override"
+            containers:
+              - name: "terraform"
+                image: "hashicorp/terraform:1.16.1"  # same version as the laptop
+                command: "cat"
+                ttyEnabled: true
+                resourceRequestCpu: "200m"
+                resourceRequestMemory: "512Mi"
+              - name: "tflint"
+                image: "ghcr.io/terraform-linters/tflint:v0.64.0"
+                command: "cat"
+                ttyEnabled: true
+                resourceRequestCpu: "100m"
+                resourceRequestMemory: "256Mi"
 
           # A plain agent for jobs that are not builds -- the seed job runs
           # here. The kubernetes plugin auto-injects the jnlp container (which

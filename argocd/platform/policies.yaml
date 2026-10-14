@@ -1,0 +1,24 @@
+# Kyverno policies, managed from git like everything else. Project `default`:
+# policies are cluster-scoped, and the shopglobe AppProject allows no
+# cluster-scoped kinds at all. Kyverno itself must be installed first
+# (bootstrap/values/kyverno.yaml) -- until then this app cannot sync, because
+# the ValidatingPolicy kind does not exist yet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-policies
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
+    targetRevision: main
+    # Top level only: directory sources do not recurse unless told to, so
+    # policies/tests/ never reaches the cluster.
+    path: policies
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

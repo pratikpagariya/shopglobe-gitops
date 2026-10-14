@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-payment-worker
+  tag: ""
+replicaCount: 1
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+  SQS_QUEUE_URL: "https://sqs.ap-south-1.amazonaws.com/355653384401/shopglobe-dev-payments"

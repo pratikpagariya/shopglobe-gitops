@@ -1,0 +1,48 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-requests-limits
+  annotations:
+    policies.kyverno.io/description: >-
+      Every container declares CPU and memory requests and a memory limit.
+      Requests are what the scheduler and Cluster Autoscaler act on; a pod
+      without them is invisible to both.
+# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# across all five policies -- disallow-latest-tag.yaml explains each field.
+spec:
+  validationActions: [Audit]
+  failurePolicy: Fail
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, jobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [shopglobe-dev, shopglobe-stage, shopglobe-prod]
+  variables:
+    # NOT ephemeral containers: `kubectl debug` containers cannot set
+    # resources at all, so requiring them would make debugging impossible.
+    - name: allContainers
+      expression: "object.spec.containers + object.spec.?initContainers.orValue([])"
+  validations:
+    # A CPU LIMIT is deliberately not required. CFS throttling adds latency
+    # even on an idle node, so whether to set one is a per-service argument,
+    # not something a policy should settle. A memory limit is not optional:
+    # without one, a leak takes the whole node down instead of one pod.
+    - expression: >-
+        variables.allContainers.all(c,
+        c.?resources.?requests.?cpu.orValue('') != '' &&
+        c.?resources.?requests.?memory.orValue('') != '' &&
+        c.?resources.?limits.?memory.orValue('') != '')
+      message: >-
+        Every container needs CPU and memory requests and a memory limit.

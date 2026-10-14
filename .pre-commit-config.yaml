@@ -5,7 +5,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: [--allow-multiple-documents, --unsafe]   # --unsafe: Helm templates aren't valid YAML
+        args: [--allow-multiple-documents]
+        # Helm templates are not YAML until rendered -- `{{- include ... }}`
+        # cannot parse. (--unsafe only permits custom tags; it does not help.)
+        # `helm template` / `helm lint` is the check for these.
+        exclude: ^charts/.*/templates/
       - id: detect-private-key
 
   - repo: https://github.com/gitleaks/gitleaks

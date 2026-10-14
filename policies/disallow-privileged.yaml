@@ -1,0 +1,40 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: disallow-privileged
+  annotations:
+    policies.kyverno.io/description: >-
+      No privileged containers. Privileged means every host device and every
+      capability -- effectively root on the node, and from there the cluster.
+# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# across all five policies -- disallow-latest-tag.yaml explains each field.
+spec:
+  validationActions: [Audit]
+  failurePolicy: Fail
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, jobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [shopglobe-dev, shopglobe-stage, shopglobe-prod]
+  variables:
+    - name: allContainers
+      expression: >-
+        object.spec.containers + object.spec.?initContainers.orValue([]) +
+        object.spec.?ephemeralContainers.orValue([])
+  validations:
+    # Pod Security Admission blocks this too, but only on Pods and only with
+    # its fixed message. This rejects the Deployment at sync time.
+    - expression: "variables.allContainers.all(c, !c.?securityContext.?privileged.orValue(false))"
+      message: "Privileged containers are not allowed: privileged is root on the node."

@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-notify-svc
+  tag: ""
+replicaCount: 1
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+  SNS_TOPIC_ARN: "arn:aws:sns:ap-south-1:355653384401:shopglobe-dev-notifications"

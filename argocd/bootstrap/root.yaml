@@ -1,0 +1,23 @@
+# The ONE manual apply after installing ArgoCD. Everything else under argocd/
+# (the project, the ApplicationSet) is then managed from git by ArgoCD itself.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
+    targetRevision: main
+    path: argocd
+    directory:
+      recurse: true
+      exclude: "bootstrap/*"  # do not manage itself
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

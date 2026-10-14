@@ -1,0 +1,11 @@
+image:
+  repository: shopglobe-prod-catalog-svc
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+envFromSecret: catalog-db
+migrations:
+  enabled: true
+  args: [alembic, -c, services/catalog_svc/alembic.ini, upgrade, head]

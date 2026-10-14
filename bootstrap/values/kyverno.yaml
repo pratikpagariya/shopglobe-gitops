@@ -1,0 +1,19 @@
+# helm upgrade --install kyverno kyverno/kyverno --version 3.9.1 \
+#   -n kyverno --create-namespace -f bootstrap/values/kyverno.yaml
+# Chart 3.9.1 = Kyverno v1.19.1. Policies use ValidatingPolicy
+# (policies.kyverno.io/v1): ClusterPolicy is deprecated in 1.19, gone in 1.20.
+# Install this BEFORE applying argocd/bootstrap/root.yaml, so the
+# ValidatingPolicy kind exists when ArgoCD syncs policies/.
+global:
+  nodeSelector:
+    workload: platform
+  tolerations:
+    - {key: workload, operator: Equal, value: platform, effect: NoSchedule}
+
+# One replica each: a lab. Policies fail CLOSED, so while the admission
+# controller restarts, new app pods are refused. Production runs 3 replicas
+# with a PDB for exactly that reason.
+admissionController: {replicas: 1}
+backgroundController: {replicas: 1}
+cleanupController: {replicas: 1}
+reportsController: {replicas: 1}

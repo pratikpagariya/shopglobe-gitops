@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: shopglobe
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"  # exists before the apps that reference it
+spec:
+  description: The 8 shopglobe services across the dev/stage/prod namespaces.
+
+  sourceRepos:
+    - https://github.com/pratikpagariya/shopglobe-gitops.git
+
+  destinations:
+    - {server: https://kubernetes.default.svc, namespace: shopglobe-dev}
+    - {server: https://kubernetes.default.svc, namespace: shopglobe-stage}
+    - {server: https://kubernetes.default.svc, namespace: shopglobe-prod}
+
+  # The project IS the blast radius. No cluster-scoped kinds at all, and only
+  # the namespaced kinds the chart actually renders -- so even a bad values
+  # file cannot create a ClusterRoleBinding, a Secret or a NetworkPolicy.
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - {group: apps, kind: Deployment}
+    - {group: "", kind: Service}
+    - {group: "", kind: ServiceAccount}
+    - {group: batch, kind: Job}  # step 7: the PreSync migration job
+
+  # No Friday deploys, no 3am deploys. Outside this window prod cannot sync --
+  # not automatically, and not by hand either. The break-glass is a reviewed
+  # PR that edits this window, which leaves a record.
+  syncWindows:
+    - kind: allow
+      schedule: "0 10 * * 1-4"  # Mon-Thu, 10:00
+      duration: 8h              # until 18:00
+      timeZone: Asia/Kolkata
+      applications: ["*-prod"]

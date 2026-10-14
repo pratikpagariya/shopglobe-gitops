@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-auth-svc
+  tag: ""
+replicaCount: 1
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+envFromSecret: auth-jwt  # JWT_SECRET, from shopglobe/dev/auth-jwt via External Secrets

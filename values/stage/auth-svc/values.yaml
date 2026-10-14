@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-auth-svc
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed dev
+replicaCount: 1
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+envFromSecret: auth-jwt  # JWT_SECRET, from shopglobe/stage/auth-jwt via External Secrets

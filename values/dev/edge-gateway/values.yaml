@@ -1,0 +1,9 @@
+image:
+  repository: shopglobe-prod-edge-gateway
+  tag: ""  # written by Jenkins on first build; the chart refuses to render until then
+replicaCount: 1
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+# Upstreams default to http://<svc>:8000 -- a short name, so it resolves inside
+# this pod's own namespace. dev's gateway can only ever reach dev's services.

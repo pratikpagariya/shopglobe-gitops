@@ -22,8 +22,13 @@ spec:
       nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
       containers:
         - name: app
-          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required -- Jenkins writes it" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The image's ENTRYPOINT is ["python", "-m"] and its CMD is
+          # edge-gateway. In Kubernetes, `command` replaces ENTRYPOINT and
+          # `args` replaces CMD -- without this, every service runs edge-gateway.
+          args:
+            - "services.{{ .Values.module | default (.Release.Name | replace "-" "_") }}.main"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

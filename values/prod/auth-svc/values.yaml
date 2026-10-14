@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-auth-svc
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+envFromSecret: auth-jwt  # JWT_SECRET, from shopglobe/prod/auth-jwt via External Secrets

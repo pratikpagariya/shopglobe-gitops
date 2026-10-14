@@ -1,0 +1,8 @@
+image:
+  repository: shopglobe-prod-payment-worker
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+  SQS_QUEUE_URL: "https://sqs.ap-south-1.amazonaws.com/355653384401/shopglobe-prod-payments"

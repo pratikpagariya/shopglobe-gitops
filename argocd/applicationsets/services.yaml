@@ -9,8 +9,9 @@ spec:
   generators:
     # Discovers every values/<env>/<service>/values.yaml in the repo and
     # creates one Application per file. No hardcoded list of 24 apps -- adding
-    # a service means adding a values file, and REMOVING one deletes its
-    # Application. The set converges on the repo, in both directions.
+    # a service means adding a values file. REMOVING one deletes its
+    # Application but leaves the workload running (preserveResourcesOnDeletion
+    # below): taking a live service down is a deliberate act, not a side effect.
     - git:
         repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
         revision: main
@@ -20,7 +21,7 @@ spec:
     metadata:
       name: '{{ index .path.segments 2 }}-{{ index .path.segments 1 }}'
     spec:
-      project: default
+      project: shopglobe
       source:
         repoURL: https://github.com/pratikpagariya/shopglobe-gitops.git
         targetRevision: main
@@ -32,9 +33,32 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: 'shopglobe-{{ index .path.segments 1 }}'
+      # syncPolicy deliberately NOT here -- templatePatch sets it per env. A
+      # patch can add `automated`, but it cannot take it away for prod.
+
+  # Same template for all 24 apps; only the sync policy differs by env, which
+  # is the second path segment: values/<env>/<service>/values.yaml.
+  #   dev   -- auto-sync + selfHeal: a manual kubectl edit is reverted
+  #   stage -- auto-sync, no selfHeal: git changes apply, drift is reported
+  #   prod  -- manual only, inside the AppProject's sync window
+  templatePatch: |
+    {{- $env := index .path.segments 1 }}
+    spec:
       syncPolicy:
+        syncOptions:
+          - CreateNamespace=false
+      {{- if eq $env "dev" }}
         automated:
           prune: true
           selfHeal: true
-        syncOptions:
-          - CreateNamespace=false
+      {{- else if eq $env "stage" }}
+        automated:
+          prune: true
+      {{- end }}
+
+  syncPolicy:
+    # Generated Applications carry the resource-deletion finalizer by default:
+    # delete or rename this file and all 24 apps take their workloads with
+    # them -- prod included. With this, the Applications go but the workloads
+    # stay running.
+    preserveResourcesOnDeletion: true

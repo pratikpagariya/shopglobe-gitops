@@ -1,0 +1,9 @@
+image:
+  repository: shopglobe-prod-edge-gateway
+  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+replicaCount: 2  # one pod lost to a spot reclaim is not an outage
+env:
+  LOG_LEVEL: INFO
+  MARKET: in
+# Upstreams default to http://<svc>:8000 -- a short name, so it resolves inside
+# this pod's own namespace. prod's gateway can only ever reach prod's services.

@@ -1,3 +1,7 @@
+# helm upgrade --install argocd argo/argo-cd --version 10.9.5 \
+#   -n argocd --create-namespace -f bootstrap/values/argocd.yaml
+# Chart 10.9.5 = ArgoCD v3.5.3. Pinned: an unpinned install is a different
+# ArgoCD every time you rebuild the cluster.
 global:
   # Everything on the tainted platform node group, same as Jenkins.
   tolerations:
@@ -24,17 +28,17 @@ configs:
 controller:
   resources:
     requests: { cpu: 250m, memory: 512Mi }
-    limits:   { cpu: 1, memory: 1Gi }
+    limits: { cpu: 1, memory: 1Gi }
 
 repoServer:
   resources:
     requests: { cpu: 100m, memory: 256Mi }
-    limits:   { cpu: 500m, memory: 512Mi }
+    limits: { cpu: 500m, memory: 512Mi }
 
 server:
   resources:
     requests: { cpu: 100m, memory: 128Mi }
-    limits:   { cpu: 500m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 256Mi }
 
 dex:
   enabled: false        # local admin only for now

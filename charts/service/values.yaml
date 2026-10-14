@@ -2,6 +2,12 @@
 nameOverride: ""
 replicaCount: 1
 
+# Which Python module this release runs. The image's ENTRYPOINT is
+# ["python", "-m"], so this becomes `python -m services.<module>.main`.
+# Empty = derive it from the release name (catalog-svc -> catalog_svc),
+# the same hyphen-to-underscore translation the Jenkinsfile does.
+module: ""
+
 image:
   registry: 355653384401.dkr.ecr.ap-south-1.amazonaws.com
   repository: ""        # set per service, e.g. shopglobe-prod-catalog-svc
@@ -20,7 +26,9 @@ envFromSecret: ""       # name of a k8s Secret to load wholesale
 
 resources:
   requests: { cpu: 50m, memory: 128Mi }
-  limits:   { cpu: 500m, memory: 256Mi }
+  # 8 services x 200m = 1.6 CPU, inside the dev/stage limits.cpu quota of 2
+  # with room for a rolling-update surge pod. At 500m, pods 5-8 are rejected.
+  limits: { cpu: 200m, memory: 256Mi }
 
 # The prod namespace enforces the `restricted` Pod Security Standard. These
 # are not optional there -- a pod without them is REJECTED at admission.
@@ -39,3 +47,20 @@ terminationGracePeriodSeconds: 30
 
 nodeSelector:
   workload: apps
+
+# Schema migrations as an ArgoCD PreSync hook. Off by default -- only a
+# service that owns a schema opts in.
+migrations:
+  enabled: false
+  args: []  # handed to the image ENTRYPOINT ["python", "-m"]
+
+# PostSync smoke test: once the sync is Healthy, call this release's /readyz
+# through its Service. The sync goes red if it never becomes ready.
+smokeTest:
+  enabled: true
+
+# Hook Jobs are short-lived; small requests keep them inside the namespace
+# quota even while a rollout's surge pod is running.
+hookResources:
+  requests: { cpu: 10m, memory: 64Mi }
+  limits: { cpu: 100m, memory: 256Mi }
