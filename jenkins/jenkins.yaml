@@ -127,6 +127,21 @@ unclassified:
   location:
     url: "http://jenkins.jenkins.svc.cluster.local:8080/"
 
+security:
+  # Job DSL script approval, OFF. With it on, every change to
+  # jenkins/jobdsl/*.groovy waits for an admin to click "Approve" in the UI --
+  # and that approval lives on the controller's disk, not in git. The rebuild
+  # test (delete the PVC, reinstall) proved it: the seed job failed with
+  # "script not yet approved for use" on a fresh controller.
+  #
+  # The cost: the DSL runs with full controller rights, so whoever can merge to
+  # shopglobe-apps main can run Groovy on Jenkins. That makes branch protection
+  # + CODEOWNERS on jenkins/jobdsl/ the real control. The production-grade fix
+  # is the authorize-project plugin: builds run as the triggering user and the
+  # DSL runs in the Groovy sandbox, with no approvals and no full rights.
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+
 # THE SEED JOB. One job, declared here, whose only purpose is to read Job DSL
 # scripts from git and generate every other job. This is the bootstrap that
 # makes jobs-as-code self-installing.

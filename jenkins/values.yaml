@@ -5,7 +5,7 @@ controller:
     # Overridden at install time with --set controller.image.tag=$TAG.
     # Once the CI pipeline exists, Jenkins commits this value into the gitops
     # repo itself and ArgoCD applies it -- no --set, no manual edit.
-    tag: "20260923-1448"
+    tag: "20260924-1426"
 
   # Our image already contains every plugin. Without this the chart installs
   # its own list at startup and you lose the whole point of pre-baking.

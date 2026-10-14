@@ -1,7 +1,9 @@
-# helm upgrade --install argocd argo/argo-cd --version 10.9.5 \
-#   -n argocd --create-namespace -f bootstrap/values/argocd.yaml
+# helm upgrade --install argocd oci://ghcr.io/argoproj/argo-helm/argo-cd \
+#   --version 10.9.5 -n argocd --create-namespace -f bootstrap/values/argocd.yaml
 # Chart 10.9.5 = ArgoCD v3.5.3. Pinned: an unpinned install is a different
-# ArgoCD every time you rebuild the cluster.
+# ArgoCD every time you rebuild the cluster. OCI from ghcr.io, not the classic
+# repo URL: that one serves the .tgz from GitHub release-asset storage, which
+# timed out mid-install on 2026-10-14.
 global:
   # Everything on the tainted platform node group, same as Jenkins.
   tolerations:
