@@ -1,6 +1,6 @@
 image:
   repository: shopglobe-prod-catalog-svc
-  tag: ""  # PROMOTED, never built here: a PR copies the tag that passed stage
+  tag: "53d2ef9acbd7"  # PROMOTED, never built here: copied from the tag that passed stage
 replicaCount: 2  # one pod lost to a spot reclaim is not an outage
 env:
   LOG_LEVEL: INFO

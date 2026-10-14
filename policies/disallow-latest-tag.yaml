@@ -7,9 +7,9 @@ metadata:
       Every image must carry a tag, and it must not be `latest`. With a mutable
       tag, two pods "on the same version" can be running different code.
 spec:
-  # Rollout step 1 of 2: Audit records violations in policy reports without
-  # blocking anything. Flip to [Deny] once the reports are clean.
-  validationActions: [Audit]
+  # Rollout step 2 of 2: Deny. Step 1 ran in Audit (violations recorded in
+  # policy reports, nothing blocked) until all 8 services reported clean.
+  validationActions: [Deny]
   # Fail CLOSED: if Kyverno is unreachable, matching requests are refused.
   # The alternative (Ignore) means an outage silently turns enforcement off.
   failurePolicy: Fail

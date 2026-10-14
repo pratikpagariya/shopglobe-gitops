@@ -7,10 +7,10 @@ metadata:
       Every container declares CPU and memory requests and a memory limit.
       Requests are what the scheduler and Cluster Autoscaler act on; a pod
       without them is invisible to both.
-# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# The spec header (Deny, fail closed, autogen, namespace scope) is identical
 # across all five policies -- disallow-latest-tag.yaml explains each field.
 spec:
-  validationActions: [Audit]
+  validationActions: [Deny]
   failurePolicy: Fail
   evaluation:
     background:

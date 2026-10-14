@@ -7,10 +7,10 @@ metadata:
       Containers must run as non-root. dev and stage only enforce the PSA
       `baseline` profile, which does not require this -- so here this policy
       is the only thing that does.
-# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# The spec header (Deny, fail closed, autogen, namespace scope) is identical
 # across all five policies -- disallow-latest-tag.yaml explains each field.
 spec:
-  validationActions: [Audit]
+  validationActions: [Deny]
   failurePolicy: Fail
   evaluation:
     background:

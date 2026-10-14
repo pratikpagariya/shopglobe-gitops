@@ -6,10 +6,10 @@ metadata:
     policies.kyverno.io/description: >-
       Images must come from this account's ECR. Those are the only images
       Jenkins built, Trivy scanned and ECR scans again on push.
-# The spec header (Audit, fail closed, autogen, namespace scope) is identical
+# The spec header (Deny, fail closed, autogen, namespace scope) is identical
 # across all five policies -- disallow-latest-tag.yaml explains each field.
 spec:
-  validationActions: [Audit]
+  validationActions: [Deny]
   failurePolicy: Fail
   evaluation:
     background:
