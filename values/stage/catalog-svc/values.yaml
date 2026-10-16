@@ -1,6 +1,6 @@
 image:
   repository: shopglobe-prod-catalog-svc
-  tag: "53d2ef9acbd7"  # PROMOTED, never built here: copied from the tag that passed dev
+  tag: "ad68916de366"  # PROMOTED, never built here: copied from the tag that passed dev
 replicaCount: 1
 env:
   LOG_LEVEL: INFO
