@@ -7,3 +7,23 @@ env:
   MARKET: in
 # Upstreams default to http://<svc>:8000 -- a short name, so it resolves inside
 # this pod's own namespace. dev's gateway can only ever reach dev's services.
+ingress:
+  enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # HTTP only: there is no domain, so there is no certificate to put on 443.
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # PUBLIC while the cluster runs. To lock it to just you, replace with
+    # your own address: curl -s https://checkip.amazonaws.com -> "<ip>/32"
+    alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
+    # target-type ip: the ALB sends straight to pod IPs (the VPC CNI gives
+    # every pod a real VPC address), skipping the NodePort + kube-proxy hop.
+    alb.ingress.kubernetes.io/target-type: ip
+    # Every Ingress with this group shares ONE ALB -- one load balancer to
+    # pay for, not one per service or per env.
+    alb.ingress.kubernetes.io/group.name: shopglobe
+    # The ALB's own health check. /readyz, so the ALB and Kubernetes agree on
+    # what "ready" means. It is only as good as /readyz itself: edge-gateway
+    # still checks only auth-svc, so a dead catalog-svc keeps it in rotation --
+    # exactly incident 1 on EC2, whose action item 3 is still open.
+    alb.ingress.kubernetes.io/healthcheck-path: /readyz

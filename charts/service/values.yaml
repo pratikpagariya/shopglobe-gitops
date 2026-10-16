@@ -21,6 +21,16 @@ serviceAccount:
 service:
   port: 8000
 
+# Off by default: only edge-gateway is internet-facing (README). On EKS the
+# class is `alb` -- the AWS Load Balancer Controller turns this object into a
+# real Application Load Balancer, configured by the annotations.
+ingress:
+  enabled: false
+  className: alb
+  host: ""        # empty = answer on any Host header (no domain or cert yet)
+  path: /
+  annotations: {}
+
 env: {}                 # plain key/value config
 envFromSecret: ""       # name of a k8s Secret to load wholesale
 

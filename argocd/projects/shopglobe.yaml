@@ -25,6 +25,7 @@ spec:
     - {group: "", kind: Service}
     - {group: "", kind: ServiceAccount}
     - {group: batch, kind: Job}  # step 7: the PreSync migration job
+    - {group: networking.k8s.io, kind: Ingress}  # edge-gateway's ALB
 
   # No Friday deploys, no overnight deploys. Outside this window prod cannot
   # sync -- not automatically, and not by hand either. The break-glass is a
